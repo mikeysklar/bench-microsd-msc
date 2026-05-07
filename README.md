@@ -1,113 +1,48 @@
 # bench-microsd-msc
 
-Performance benchmarks for microSD passthrough via USB MSC (CIRCUITPY_SDCARD_USB).
-Related to adafruit/circuitpython#10983 and PR #10967.
-
-## Hardware
-
-- **Board**: Adafruit Metro RP2040
-- **SD cards**:
-  - 16 GB SanDisk Class 10 (FAT32)
-  - 64 MB card (FAT16)
-- **Sniffer**: Cynthion USB analyzer (30-second captures per run)
-
-## Test Hosts
-
-| OS | Version | Build | Hardware |
-|----|---------|-------|----------|
-| macOS Tahoe | 26.3.1 | 25D2128 | Mac mini (M2, 8-core, 8 GB) |
-| Ubuntu | 24.04.3 LTS | kernel 6.17.0-22-generic | bravo.local |
-| Windows | TBD | TBD | TBD |
-
-## Firmware
-
-Two builds from the same commit (`13a8fb9f7b`, adafruit/circuitpython main):
-
-| File | CIRCUITPY_SDCARD_USB | Description |
-|------|----------------------|-------------|
-| `firmware/metro_rp2040-sdcard-usb-on-13a8fb9f7b.uf2` | 1 (default) | SD exposed as USB MSC LUN |
-| `firmware/metro_rp2040-sdcard-usb-off-13a8fb9f7b.uf2` | 0 | SD not exposed via USB |
-
-## Repo Layout
-
-```
-bench/
-  code.py              — CPU benchmark; copy to /Volumes/CIRCUITPY/code.py
-captures/
-  sdcard-usb-on/       — captures with SD exposed via USB MSC
-    fat32/{linux,macos,windows}/   — 30-second .pcap files
-    fat16/{linux,macos,windows}/
-  sdcard-usb-off/      — captures with SD USB disabled
-    fat32/{linux,macos,windows}/
-    fat16/{linux,macos,windows}/
-firmware/
-  *.uf2                — labeled build artifacts (see table above)
-results/
-  sdcard-usb-on/       — bench output files saved from /sd/cpu_only_bench.txt
-    fat32/{linux,macos,windows}/
-    fat16/{linux,macos,windows}/
-  sdcard-usb-off/
-    (same structure)
-tools/
-  extract_scsi.sh      — parse Cynthion pcap → SCSI command table (TSV/pretty/bucket)
-  analyze_pcap.sh      — full analysis report; optionally cross-correlates with bench
-```
-
-## Test Procedure
-
-**Per run (one cell in the results table):**
-
-1. Flash the appropriate `.uf2` to the Metro RP2040.
-2. Insert the target SD card (FAT32 or FAT16).
-3. Start a 30-second Cynthion capture.
-4. Unplug and replug the board to force a fresh USB enumeration.
-5. Wait for `=== cpu_only_bench done ===` in the serial console.
-6. Stop the capture; save `.pcap` to `captures/<variant>/<format>/<os>/`.
-7. Copy `/sd/cpu_only_bench.txt` from the SD card to `results/<variant>/<format>/<os>/`.
-
-**IMPORTANT**: Always power-cycle (unplug/replug) between runs, not soft-reset.
-The ~20-second slow window only appears during fresh USB enumeration.
-
-## Analysis
-
-```bash
-# Parse a capture
-./tools/extract_scsi.sh captures/sdcard-usb-on/fat32/macos/capture.pcap
-
-# Full report with bench cross-correlation
-./tools/analyze_pcap.sh captures/sdcard-usb-on/fat32/macos/capture.pcap \
-                         results/sdcard-usb-on/fat32/macos/cpu_only_bench.txt
-```
+Performance benchmarks for microSD passthrough via USB MSC (`CIRCUITPY_SDCARD_USB`).
+Related to adafruit/circuitpython [#10983](https://github.com/adafruit/circuitpython/issues/10983) and [PR #10967](https://github.com/adafruit/circuitpython/pull/10967).
 
 ## Results
 
-### Benchmark: `cpu_only_bench` — first-pass CPU time after power-cycle
+Board: Adafruit Metro RP2040. Firmware: main @ `13a8fb9f7b`. Slow-window = iters with cpu > steady-state (229 ms) after fresh power-cycle.
 
-Slow-window duration = first iter with `cpu>500ms` through last iter before drop to `<300ms`.
-Steady-state cpu ≈ 250 ms/iter (Metro RP2040 @ 125 MHz).
+| Firmware | SD format | Host OS | Slow-window (s) | Peak cpu (ms) |
+|----------|-----------|---------|-----------------|---------------|
+| usb-on   | FAT32     | macOS   | ~17             | 492           |
+| usb-on   | FAT32     | Linux   | ~8.4            | 492           |
+| usb-on   | FAT32     | Windows | never settled   | 465           |
+| usb-on   | FAT16     | macOS   | ~0.6            | 335           |
+| usb-on   | FAT16     | Linux   | ~3.4            | 458           |
+| usb-on   | FAT16     | Windows | ~2              | 419           |
+| usb-off  | FAT32     | macOS   | ~0              | 247           |
+| usb-off  | FAT32     | Linux   | ~1.5            | 306           |
+| usb-off  | FAT32     | Windows | 0               | 229           |
+| usb-off  | FAT16     | macOS   | ~0              | 253           |
+| usb-off  | FAT16     | Linux   | ~1.5            | 306           |
+| usb-off  | FAT16     | Windows | 0               | 229           |
 
-| Firmware | SD format | Host OS | Slow-window (s) | Peak cpu (ms) | Steady cpu (ms) | SD mounts? |
-|----------|-----------|---------|-----------------|---------------|-----------------|------------|
-| usb-on   | FAT32     | macOS   | ~17             | 492           | 229             | Yes        |
-| usb-on   | FAT32     | Linux   | ~8.4            | 492           | 229             | Yes        |
-| usb-on   | FAT32     | Windows |                 |               | 229             |            |
-| usb-on   | FAT16     | macOS   | ~0.6            | 335           | 229             | Yes        |
-| usb-on   | FAT16     | Linux   | ~3.4            | 458           | 229             | Yes        |
-| usb-on   | FAT16     | Windows |                 |               | 229             |            |
-| usb-off  | FAT32     | macOS   | ~0              | 247           | 229             | N/A        |
-| usb-off  | FAT32     | Linux   | ~1.5            | 306           | 229             | N/A        |
-| usb-off  | FAT32     | Windows |                 |               | 229             | N/A        |
-| usb-off  | FAT16     | macOS   | ~0              | 253           | 229             | N/A        |
-| usb-off  | FAT16     | Linux   | ~1.5            | 306           | 229             | N/A        |
-| usb-off  | FAT16     | Windows |                 |               | 229             | N/A        |
+usb-on = `CIRCUITPY_SDCARD_USB=1` (default). usb-off = `CIRCUITPY_SDCARD_USB=0`.
+SD cards: 16 GB SanDisk Class 10 (FAT32), 64 MB (FAT16). Captured with Cynthion USB analyzer (30 s per run).
 
-### PREVENT_ALLOW behavior (from pcap, usb-on only)
+## Test Hosts
 
-| SD format | Host OS | PREVENT_ALLOW response | TUR rate (steady, /s) |
-|-----------|---------|------------------------|-----------------------|
-| FAT32     | Linux   |                        |                       |
-| FAT32     | macOS   |                        |                       |
-| FAT32     | Windows |                        |                       |
-| FAT16     | Linux   |                        |                       |
-| FAT16     | macOS   |                        |                       |
-| FAT16     | Windows |                        |                       |
+| OS | Version | Hardware |
+|----|---------|----------|
+| macOS Tahoe | 26.3.1 (build 25D2128) | Mac mini, Apple M2, 8 GB |
+| Ubuntu | 24.04.3 LTS, kernel 6.17.0-22-generic | bravo.local |
+| Windows | TBD | TBD |
+
+## Files
+
+```
+bench/code.py                          — CPU benchmark (copy to CIRCUITPY/code.py)
+firmware/*.uf2                         — labeled builds (usb-on / usb-off @ 13a8fb9f7b)
+captures/<variant>/<format>/<os>/
+  capture.pcap                         — 30-second Cynthion USB capture
+  scsi.txt                             — human-readable decoded SCSI commands
+results/<variant>/<format>/<os>/
+  cpu_only_bench.txt                   — 100-iter bench output from /sd/
+tools/extract_scsi.sh                  — pcap → SCSI table (pretty / TSV / bucket)
+tools/analyze_pcap.sh                  — full analysis report with bench cross-correlation
+```
