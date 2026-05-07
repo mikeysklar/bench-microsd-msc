@@ -31,7 +31,7 @@ SD cards: 16 GB SanDisk Class 10 (FAT32), 64 MB (FAT16). Captured with Cynthion 
 |----|---------|----------|
 | macOS Tahoe | 26.3.1 (build 25D2128) | Mac mini, Apple M2, 8 GB |
 | Ubuntu | 24.04.3 LTS, kernel 6.17.0-22-generic | bravo.local |
-| Windows | TBD | TBD |
+| Windows 11 Pro | 10.0.26200 Build 26200 | TBD |
 
 ## Files
 
