@@ -11,6 +11,14 @@ Related to adafruit/circuitpython#10983 and PR #10967.
   - 64 MB card (FAT16)
 - **Sniffer**: Cynthion USB analyzer (30-second captures per run)
 
+## Test Hosts
+
+| OS | Version | Build | Hardware |
+|----|---------|-------|----------|
+| macOS Tahoe | 26.3.1 | 25D2128 | Mac mini (M2, 8-core, 8 GB) |
+| Ubuntu | 24.04.3 LTS | kernel 6.17.0-22-generic | bravo.local |
+| Windows | TBD | TBD | TBD |
+
 ## Firmware
 
 Two builds from the same commit (`13a8fb9f7b`, adafruit/circuitpython main):
@@ -80,18 +88,18 @@ Steady-state cpu ≈ 250 ms/iter (Metro RP2040 @ 125 MHz).
 
 | Firmware | SD format | Host OS | Slow-window (s) | Peak cpu (ms) | Steady cpu (ms) | SD mounts? |
 |----------|-----------|---------|-----------------|---------------|-----------------|------------|
-| usb-on   | FAT32     | Linux   |                 |               |                 |            |
-| usb-on   | FAT32     | macOS   |                 |               |                 |            |
-| usb-on   | FAT32     | Windows |                 |               |                 |            |
-| usb-on   | FAT16     | Linux   |                 |               |                 |            |
-| usb-on   | FAT16     | macOS   |                 |               |                 |            |
-| usb-on   | FAT16     | Windows |                 |               |                 |            |
-| usb-off  | FAT32     | Linux   |                 |               |                 | N/A        |
-| usb-off  | FAT32     | macOS   |                 |               |                 | N/A        |
-| usb-off  | FAT32     | Windows |                 |               |                 | N/A        |
-| usb-off  | FAT16     | Linux   |                 |               |                 | N/A        |
-| usb-off  | FAT16     | macOS   |                 |               |                 | N/A        |
-| usb-off  | FAT16     | Windows |                 |               |                 | N/A        |
+| usb-on   | FAT32     | macOS   | ~17             | 492           | 229             | Yes        |
+| usb-on   | FAT32     | Linux   | ~8.4            | 492           | 229             | Yes        |
+| usb-on   | FAT32     | Windows |                 |               | 229             |            |
+| usb-on   | FAT16     | macOS   | ~0.6            | 335           | 229             | Yes        |
+| usb-on   | FAT16     | Linux   | ~3.4            | 458           | 229             | Yes        |
+| usb-on   | FAT16     | Windows |                 |               | 229             |            |
+| usb-off  | FAT32     | macOS   | ~0              | 247           | 229             | N/A        |
+| usb-off  | FAT32     | Linux   | ~1.5            | 306           | 229             | N/A        |
+| usb-off  | FAT32     | Windows |                 |               | 229             | N/A        |
+| usb-off  | FAT16     | macOS   | ~0              | 253           | 229             | N/A        |
+| usb-off  | FAT16     | Linux   | ~1.5            | 306           | 229             | N/A        |
+| usb-off  | FAT16     | Windows |                 |               | 229             | N/A        |
 
 ### PREVENT_ALLOW behavior (from pcap, usb-on only)
 
